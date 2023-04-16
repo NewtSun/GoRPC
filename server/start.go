@@ -12,7 +12,7 @@ import (
 	"net"
 )
 
-//func RunServer(addr ...chan string) {
+//func StartServer(addr ...chan string) {
 //	// pick a free port
 //	l, err := net.Listen("tcp", ":8888")
 //	if err != nil {
@@ -23,13 +23,14 @@ import (
 //	Accept(l)
 //}
 
-func RunServer(addr ...chan string) {
+func StartServer(addr string, addrCh ...chan string) {
 	var foo codec.Foo
-	if err := Register(&foo); err != nil {
-		log.Fatal("register error:", err)
-	}
-	// pick a free port
-	l, err := net.Listen("tcp", ":8888")
+	//if err := Register(&foo); err != nil {
+	//	log.Fatal("register error:", err)
+	//}
+	_ = Register(&foo)
+	// pick a free port ":8888"
+	l, err := net.Listen("tcp", addr)
 	if err != nil {
 		log.Fatal("network error:", err)
 	}

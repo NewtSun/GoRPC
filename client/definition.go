@@ -8,6 +8,7 @@ package client
 
 import (
 	"GoRPC/codec"
+	"math/rand"
 	"net"
 	"sync"
 )
@@ -44,3 +45,35 @@ type clientResult struct {
 }
 
 type newClientFunc func(conn net.Conn, opt *codec.Option) (client *Client, err error)
+
+// SelectMode xclient for discovery
+type SelectMode int
+
+const (
+	RandomSelect     SelectMode = iota // select randomly
+	RoundRobinSelect                   // select using Robbin algorithm
+)
+
+type Discovery interface {
+	Refresh() error // refresh from remote registry
+	Update(servers []string) error
+	Get(mode SelectMode) (string, error)
+	GetAll() ([]string, error)
+}
+
+// MultiServersDiscovery is a discovery for multi servers without a registry center
+// user provides the server addresses explicitly instead
+type MultiServersDiscovery struct {
+	r       *rand.Rand   // generate random number
+	mu      sync.RWMutex // protect following
+	servers []string
+	index   int // record the selected position for robin algorithm
+}
+
+type XClient struct {
+	d       Discovery
+	mode    SelectMode
+	opt     *codec.Option
+	mu      sync.Mutex // protect following
+	clients map[string]*Client
+}

@@ -11,6 +11,7 @@ import (
 	"context"
 	"log"
 	"sync"
+	"time"
 )
 
 //func StartClient() {
@@ -57,4 +58,43 @@ func StartClient() {
 		}(i)
 	}
 	wg.Wait()
+}
+
+func singleCall(addr1, addr2 string) {
+	d := NewMultiServerDiscovery([]string{"tcp@" + addr1, "tcp@" + addr2})
+	xc := NewXClient(d, RandomSelect, nil)
+	defer func() { _ = xc.Close() }()
+	// send request & receive response
+	var wg sync.WaitGroup
+	for i := 0; i < 5; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			foo(xc, context.Background(), "call", "Foo.Sum", &codec.Args{Num1: i, Num2: i * i})
+		}(i)
+	}
+	wg.Wait()
+}
+
+func broadcast(addr1, addr2 string) {
+	d := NewMultiServerDiscovery([]string{"tcp@" + addr1, "tcp@" + addr2})
+	xc := NewXClient(d, RandomSelect, nil)
+	defer func() { _ = xc.Close() }()
+	var wg sync.WaitGroup
+	for i := 0; i < 5; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			foo(xc, context.Background(), "broadcast", "Foo.Sum", &codec.Args{Num1: i, Num2: i * i})
+			// expect 2 - 5 timeout
+			ctx, _ := context.WithTimeout(context.Background(), time.Second*2)
+			foo(xc, ctx, "broadcast", "Foo.Sleep", &codec.Args{Num1: i, Num2: i * i})
+		}(i)
+	}
+	wg.Wait()
+}
+
+func StartXClient(addr1, addr2 string) {
+	singleCall(addr1, addr2)
+	broadcast(addr1, addr2)
 }

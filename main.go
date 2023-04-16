@@ -13,11 +13,14 @@ import (
 )
 
 func main() {
-	//server.RunServer()
-	go server.RunServer()
+	//server.StartServer()
+	go server.StartServer(":8888")
+	go server.StartServer(":9999")
 
 	time.Sleep(5 * time.Second)
 
-	client.StartClient()
+	//client.StartClient()
+
+	client.StartXClient(":8888", ":9999")
 
 }
