@@ -8,33 +8,14 @@ package client
 
 import (
 	"GoRPC/codec"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"log"
-	"net"
 )
 
 var _ io.Closer = (*Client)(nil)
 
 var ErrShutdown = errors.New("connection is shut down")
-
-func NewClient(conn net.Conn, opt *codec.Option) (*Client, error) {
-	f := codec.NewCodecFuncMap[opt.CodecType]
-	if f == nil {
-		err := fmt.Errorf("invalid codec type %s", opt.CodecType)
-		log.Println("rpc client: codec error:", err)
-		return nil, err
-	}
-	// send options with server
-	if err := json.NewEncoder(conn).Encode(opt); err != nil {
-		log.Println("rpc client: options error: ", err)
-		_ = conn.Close()
-		return nil, err
-	}
-	return newClientCodec(f(conn), opt), nil
-}
 
 func newClientCodec(cc codec.Codec, opt *codec.Option) *Client {
 	client := &Client{

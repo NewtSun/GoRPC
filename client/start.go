@@ -63,7 +63,10 @@ func StartClient() {
 func singleCall(addr1, addr2 string) {
 	d := NewMultiServerDiscovery([]string{"tcp@" + addr1, "tcp@" + addr2})
 	xc := NewXClient(d, RandomSelect, nil)
-	defer func() { _ = xc.Close() }()
+	defer func() {
+		_ = xc.Close()
+		log.Println("client conn is closed")
+	}()
 	// send request & receive response
 	var wg sync.WaitGroup
 	for i := 0; i < 5; i++ {

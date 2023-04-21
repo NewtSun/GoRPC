@@ -17,7 +17,7 @@ func main() {
 	go server.StartServer(":8888")
 	go server.StartServer(":9999")
 
-	time.Sleep(5 * time.Second)
+	time.Sleep(3 * time.Second)
 
 	//client.StartClient()
 

@@ -11,6 +11,7 @@ import (
 	"math/rand"
 	"net"
 	"sync"
+	"time"
 )
 
 // Call represents an active RPC.
@@ -69,6 +70,15 @@ type MultiServersDiscovery struct {
 	servers []string
 	index   int // record the selected position for robin algorithm
 }
+
+type RegistryDiscovery struct {
+	*MultiServersDiscovery
+	registry   string
+	timeout    time.Duration
+	lastUpdate time.Time
+}
+
+const defaultUpdateTimeout = time.Second * 10
 
 type XClient struct {
 	d       Discovery

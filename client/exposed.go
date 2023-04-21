@@ -10,6 +10,7 @@ import (
 	"GoRPC/codec"
 	"bufio"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -39,7 +40,7 @@ import (
 //	return NewClient(conn, opt)
 //}
 
-func dialTimeout(f newClientFunc, network, address string, opts ...*codec.Option) (client *Client, err error) {
+func dialTimeout(clientFunc newClientFunc, network, address string, opts ...*codec.Option) (client *Client, err error) {
 	opt, err := parseOptions(opts...)
 	if err != nil {
 		return nil, err
@@ -56,7 +57,7 @@ func dialTimeout(f newClientFunc, network, address string, opts ...*codec.Option
 	}()
 	ch := make(chan clientResult)
 	go func() {
-		client, err := f(conn, opt)
+		client, err := clientFunc(conn, opt)
 		ch <- clientResult{client: client, err: err}
 	}()
 	if opt.ConnectTimeout == 0 {
@@ -112,6 +113,22 @@ func (client *Client) Call(ctx context.Context, serviceMethod string, args, repl
 	case call := <-call.Done:
 		return call.Error
 	}
+}
+
+func NewClient(conn net.Conn, opt *codec.Option) (*Client, error) {
+	f := codec.NewCodecFuncMap[opt.CodecType]
+	if f == nil {
+		err := fmt.Errorf("invalid codec type %s", opt.CodecType)
+		log.Println("rpc client: codec error:", err)
+		return nil, err
+	}
+	// send options with server
+	if err := json.NewEncoder(conn).Encode(opt); err != nil {
+		log.Println("rpc client: options error: ", err)
+		_ = conn.Close()
+		return nil, err
+	}
+	return newClientCodec(f(conn), opt), nil
 }
 
 // NewHTTPClient new a Client instance via HTTP as transport protocol
